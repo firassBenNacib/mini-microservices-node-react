@@ -1,0 +1,21 @@
+services:
+  notification-service:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-notification:${IMAGE_TAG:-demo}
+
+  audit-service:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-audit:${IMAGE_TAG:-demo}
+
+  auth-service:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-auth:${IMAGE_TAG:-demo}
+
+  mailer-service:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-mailer:${IMAGE_TAG:-demo}
+
+  api-service:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-api:${IMAGE_TAG:-demo}
+
+  web-frontend:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-web:${IMAGE_TAG:-demo}
+
+  gateway:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-gateway:${IMAGE_TAG:-demo}

@@ -1,0 +1,35 @@
+services:
+  notification-service:
+    image: mini-node-notification:${IMAGE_TAG:-demo}
+    build:
+      context: ./backend/notification-service
+
+  audit-service:
+    image: mini-node-audit:${IMAGE_TAG:-demo}
+    build:
+      context: ./backend/audit-service
+
+  auth-service:
+    image: mini-node-auth:${IMAGE_TAG:-demo}
+    build:
+      context: ./backend/auth-service
+
+  mailer-service:
+    image: mini-node-mailer:${IMAGE_TAG:-demo}
+    build:
+      context: ./backend/mailer-service
+
+  api-service:
+    image: mini-node-api:${IMAGE_TAG:-demo}
+    build:
+      context: ./backend/api-service
+
+  web-frontend:
+    image: mini-node-web:${IMAGE_TAG:-demo}
+    build:
+      context: ./frontend
+
+  gateway:
+    image: mini-node-gateway:${IMAGE_TAG:-demo}
+    build:
+      context: ./gateway

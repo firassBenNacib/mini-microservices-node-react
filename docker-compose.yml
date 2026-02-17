@@ -1,0 +1,232 @@
+x-common-env: &common-env
+  CORS_ORIGIN: ${CORS_ORIGIN}
+
+x-jwt-env: &jwt-env
+  JWT_SECRET: ${JWT_SECRET}
+  JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+
+x-demo-user-env: &demo-user-env
+  DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL}
+  DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD}
+
+x-db-env: &db-env
+  DB_HOST: ${DB_HOST:-postgres}
+  DB_PORT: ${DB_PORT:-5432}
+  DB_USER: ${DB_USER:-devops_app}
+  DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+  DB_NAME: ${DB_NAME:-devops_demo}
+
+x-audit-env: &audit-env
+  AUDIT_URL: ${AUDIT_URL:-http://audit-service:8084/audit/events}
+  AUDIT_API_KEY: ${AUDIT_API_KEY}
+  AUDIT_TIMEOUT_MS: ${AUDIT_TIMEOUT_MS:-2000}
+
+x-mailer-env: &mailer-env
+  MAILER_URL: ${MAILER_URL:-http://mailer-service:8083/send}
+  MAILER_API_KEY: ${MAILER_API_KEY}
+  MAILER_TIMEOUT_MS: ${MAILER_TIMEOUT_MS:-5000}
+
+x-notify-env: &notify-env
+  NOTIFY_URL: ${NOTIFY_URL:-http://notification-service:8090/notify}
+  NOTIFY_API_KEY: ${NOTIFY_API_KEY}
+  NOTIFY_TIMEOUT_MS: ${NOTIFY_TIMEOUT_MS:-3000}
+
+x-smtp-env: &smtp-env
+  SMTP_HOST: ${SMTP_HOST}
+  SMTP_PORT: ${SMTP_PORT}
+  SMTP_USER: ${SMTP_USER}
+  SMTP_PASS: ${SMTP_PASS}
+  SMTP_SECURE: ${SMTP_SECURE}
+  SMTP_FROM: ${SMTP_FROM}
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-service-security: &service-security
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  pids_limit: 256
+
+x-readonly-runtime: &readonly-runtime
+  read_only: true
+  tmpfs:
+    - /tmp
+
+x-readonly-nginx: &readonly-nginx
+  read_only: true
+  tmpfs:
+    - /tmp
+    - /var/cache/nginx
+    - /var/run
+
+services:
+  postgres:
+    image: postgres@sha256:97ff59a4e30e08d1c11bdcd9455e7832368c0572b576c9092cde2df4ae5552a3
+    container_name: node-demo-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-devops_app}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-devops_demo}
+    volumes:
+      - node-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${DB_USER:-devops_app} -d ${DB_NAME:-devops_demo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 512
+    cpus: "2.0"
+    mem_limit: "2g"
+    logging: *default-logging
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit@sha256:7c38788069433ba9d2d9131abac8d17da0fb18f09b689207ec7a773dcb8d6eee
+    container_name: node-demo-mailpit
+    <<: *service-security
+    cpus: "0.50"
+    mem_limit: "256m"
+    logging: *default-logging
+    restart: unless-stopped
+
+  notification-service:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-notification@sha256:55e4e98149e502bebd5d6d4920755cadb372c018d7c9d7253dd47b11d0479a2a
+    env_file:
+      - ./.env
+    environment:
+      PORT: 8090
+      NOTIFY_API_KEY: ${NOTIFY_API_KEY}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER}
+      TWILIO_TIMEOUT_MS: ${TWILIO_TIMEOUT_MS:-5000}
+      TWILIO_STATUS_CALLBACK_URL: ${TWILIO_STATUS_CALLBACK_URL:-}
+      LOG_LEVEL: ${NOTIFY_LOG_LEVEL:-INFO}
+    <<: [*service-security, *readonly-runtime]
+    cpus: "0.50"
+    mem_limit: "512m"
+    logging: *default-logging
+    restart: unless-stopped
+
+  audit-service:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-audit@sha256:b08fe86e6b0553af71c12cd54c3354cdd4754a3fc1c43e6a9dfd4ca94725aca2
+    env_file:
+      - ./.env
+    environment:
+      PORT: 8084
+      <<: [*common-env, *db-env]
+      AUDIT_API_KEY: ${AUDIT_API_KEY}
+    <<: [*service-security, *readonly-runtime]
+    cpus: "0.50"
+    mem_limit: "512m"
+    logging: *default-logging
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  auth-service:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-auth@sha256:66d9f8e20a87d1fd05a804d74a6b5583b11bdc17faea8401b92eb067283a59ca
+    env_file:
+      - ./.env
+    environment:
+      PORT: 8081
+      <<: [*common-env, *jwt-env, *demo-user-env, *db-env, *audit-env]
+      AUDIT_URL: ${AUDIT_URL:-http://audit-service:8084/audit/events}
+    <<: [*service-security, *readonly-runtime]
+    cpus: "0.50"
+    mem_limit: "512m"
+    logging: *default-logging
+    depends_on:
+      postgres:
+        condition: service_healthy
+      audit-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mailer-service:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-mailer@sha256:77f6d3aea5e6661c392793b8abb108544be16884b31f3df0db833d74ce55e635
+    env_file:
+      - ./.env
+    environment:
+      PORT: 8083
+      <<: [*common-env, *smtp-env]
+      MAILER_API_KEY: ${MAILER_API_KEY}
+    <<: [*service-security, *readonly-runtime]
+    cpus: "0.50"
+    mem_limit: "512m"
+    logging: *default-logging
+    depends_on:
+      mailpit:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api-service:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-api@sha256:26d78172dea2f9303aabf53fde4b7afb506ef1d9c9f72e90ee24d393281a556d
+    env_file:
+      - ./.env
+    environment:
+      PORT: 8082
+      <<: [*common-env, *jwt-env, *mailer-env, *audit-env, *notify-env]
+      MAILER_URL: ${MAILER_URL:-http://mailer-service:8083/send}
+      AUDIT_URL: ${AUDIT_URL:-http://audit-service:8084/audit/events}
+      NOTIFY_URL: ${NOTIFY_URL:-http://notification-service:8090/notify}
+    <<: [*service-security, *readonly-runtime]
+    cpus: "0.50"
+    mem_limit: "512m"
+    logging: *default-logging
+    depends_on:
+      mailer-service:
+        condition: service_healthy
+      audit-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web-frontend:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-web@sha256:2422fad8bbe29a19c0bb610aecd2c9b65a56e5ec99197ab4c0ca02647cc0eaef
+    expose:
+      - "8080"
+    <<: [*service-security, *readonly-nginx]
+    cpus: "0.50"
+    mem_limit: "512m"
+    logging: *default-logging
+    restart: unless-stopped
+
+  gateway:
+    image: ${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME is required}/mini-node-gateway@sha256:3421a94b9cd8157a917e503f258460b20ec430c56b86d479694ad4dcc6b3634c
+    ports:
+      - "${NODE_GATEWAY_BIND_HOST:-127.0.0.1}:${NODE_GATEWAY_PORT:-7080}:8080"
+    <<: [*service-security, *readonly-nginx]
+    cpus: "0.50"
+    mem_limit: "512m"
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      web-frontend:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      api-service:
+        condition: service_healthy
+      audit-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  node-postgres-data:
