@@ -33,7 +33,7 @@ A mini microservices application with Node.js backends, a React frontend, an Ngi
 ```bash
 git clone https://github.com/firassBenNacib/mini-microservices-node-react.git
 cd mini-microservices-node-react
-cp .env.example .env
+cp .env.local.example .env
 ```
 
 Update `.env` with real values before running the application.
@@ -122,7 +122,6 @@ Use separate environment files by runtime:
 
 - [`.env.local.example`](./.env.local.example): local Docker Compose development
 - [`.env.cloud-provider.example`](./.env.cloud-provider.example): cloud deployment runtime reference
-- [`.env.example`](./.env.example): backward-compatible generic example
 
 Minimum required values in `.env`:
 
@@ -184,7 +183,6 @@ Safe to push to a public repository:
 - `scripts/`
 - `.github/workflows/`
 - example environment contracts:
-  - `.env.example`
   - `.env.local.example`
   - `.env.cloud-provider.example`
 - repo metadata such as `CODEOWNERS`, `CONTRIBUTING.md`, and `SECURITY.md`
