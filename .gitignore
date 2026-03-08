@@ -1,12 +1,16 @@
 .env
 .env.*
 !.env.example
+!.env.local.example
+!.env.cloud-provider.example
 
 **/node_modules/
 **/dist/
 **/build/
 **/coverage/
 **/.vite/
+
+.artifacts/
 
 **/__pycache__/
 **/*.pyc
