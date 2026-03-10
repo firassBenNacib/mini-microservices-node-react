@@ -11,6 +11,9 @@ concurrency:
   group: dependency-review-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  TRIVY_VERSION: v0.69.3
+
 jobs:
   dependency-review:
     name: Dependency Review
@@ -22,20 +25,25 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install Trivy
+        run: |
+          tmp="$(mktemp -d)"
+          curl -fsSL "https://github.com/aquasecurity/trivy/releases/download/${TRIVY_VERSION}/trivy_${TRIVY_VERSION#v}_Linux-64bit.tar.gz" -o "$tmp/trivy.tar.gz"
+          tar -xzf "$tmp/trivy.tar.gz" -C "$tmp"
+          install "$tmp/trivy" /usr/local/bin/trivy
+
       - name: Dependency vulnerability scan
         id: trivy_vuln
         continue-on-error: true
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          scanners: vuln
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          hide-progress: true
-          exit-code: "1"
-          format: sarif
-          output: trivy-dependencies.sarif
+        run: |
+          trivy fs . \
+            --scanners vuln \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --format sarif \
+            --output trivy-dependencies.sarif \
+            --exit-code 1 \
+            --quiet
 
       - name: Upload dependency scan SARIF
         if: always() && hashFiles('trivy-dependencies.sarif') != ''
