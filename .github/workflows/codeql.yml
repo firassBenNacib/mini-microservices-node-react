@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/actions/**"
-      - ".github/workflows/codeql.yml"
+      - ".github/workflows/**"
       - "backend/**"
       - "frontend/**"
       - "gateway/**"
@@ -16,7 +16,7 @@ on:
       - main
     paths:
       - ".github/actions/**"
-      - ".github/workflows/codeql.yml"
+      - ".github/workflows/**"
       - "backend/**"
       - "frontend/**"
       - "gateway/**"
