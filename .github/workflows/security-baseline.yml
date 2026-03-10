@@ -5,29 +5,7 @@ on:
   push:
     branches:
       - main
-    paths:
-      - ".github/actions/**"
-      - ".github/workflows/security-baseline.yml"
-      - ".github/workflows/codeql.yml"
-      - ".github/workflows/container-security.yml"
-      - ".github/workflows/dast.yml"
-      - "backend/**"
-      - "frontend/**"
-      - "gateway/**"
-      - "scripts/**"
-      - "docker-compose*.yml"
   pull_request:
-    paths:
-      - ".github/actions/**"
-      - ".github/workflows/security-baseline.yml"
-      - ".github/workflows/codeql.yml"
-      - ".github/workflows/container-security.yml"
-      - ".github/workflows/dast.yml"
-      - "backend/**"
-      - "frontend/**"
-      - "gateway/**"
-      - "scripts/**"
-      - "docker-compose*.yml"
   schedule:
     - cron: "0 4 * * 1"
 
