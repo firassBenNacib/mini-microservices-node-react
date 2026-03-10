@@ -4,6 +4,7 @@ set -euo pipefail
 BASE_URL="${BASE_URL:-}"
 SMOKE_AUTH_EMAIL="${SMOKE_AUTH_EMAIL:-}"
 SMOKE_AUTH_PASSWORD="${SMOKE_AUTH_PASSWORD:-}"
+REQUIRE_AUTH_SMOKE="${REQUIRE_AUTH_SMOKE:-false}"
 AUTH_TOKEN=""
 
 usage() {
@@ -13,6 +14,7 @@ Usage: smoke_test.sh --base-url <url>
 Optional environment:
   SMOKE_AUTH_EMAIL
   SMOKE_AUTH_PASSWORD
+  REQUIRE_AUTH_SMOKE=true
 EOF
 }
 
@@ -122,6 +124,11 @@ PY
   request POST /auth/login "${login_payload}"
   login_status="$(<"${TMP_DIR}/status.txt")"
   if [[ "${login_status}" != "200" ]]; then
+    if [[ "${REQUIRE_AUTH_SMOKE}" == "true" ]]; then
+      echo "Authenticated smoke checks are required, but headless login returned HTTP ${login_status}." >&2
+      cat "${TMP_DIR}/body.txt" >&2
+      exit 1
+    fi
     echo "Skipping authenticated smoke checks; headless login returned HTTP ${login_status}."
     cat "${TMP_DIR}/body.txt"
     echo
@@ -130,9 +137,12 @@ PY
   fi
   assert_body_contains '"token"'
   AUTH_TOKEN="$(
-    python3 - <<'PY' < "${TMP_DIR}/body.txt"
-import json, sys
-print(json.load(sys.stdin)["token"])
+    BODY_FILE="${TMP_DIR}/body.txt" python3 - <<'PY'
+import json
+import os
+
+with open(os.environ["BODY_FILE"], "r", encoding="utf-8") as handle:
+    print(json.load(handle)["token"])
 PY
   )"
 
@@ -142,9 +152,14 @@ PY
   assert_body_contains 'Microservices deployed and working'
 
   echo "Smoke check: protected audit recent"
-  request GET '/audit/recent?limit=1'
+  request GET '/audit/recent?limit=5'
   assert_status 200
+  assert_body_contains "${SMOKE_AUTH_EMAIL}"
 else
+  if [[ "${REQUIRE_AUTH_SMOKE}" == "true" ]]; then
+    echo "Authenticated smoke checks are required, but SMOKE_AUTH_EMAIL and SMOKE_AUTH_PASSWORD are not set." >&2
+    exit 1
+  fi
   echo "Skipping authenticated smoke checks; SMOKE_AUTH_EMAIL and SMOKE_AUTH_PASSWORD are not set."
 fi
 

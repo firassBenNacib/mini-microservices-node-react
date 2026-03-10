@@ -1,4 +1,5 @@
 const { config } = require('../config');
+const { handleUnexpectedError, sendProblem } = require('../http/problem-response');
 
 function createMailerController({ mailerService }) {
   function health(req, res) {
@@ -8,23 +9,23 @@ function createMailerController({ mailerService }) {
   async function send(req, res) {
     const apiKey = req.headers['x-mailer-key'];
     if (!apiKey || apiKey !== config.mailerApiKey) {
-      return res.status(401).json({ error: 'invalid mailer key' });
+      return sendProblem(res, 401, 'invalid mailer key');
     }
 
     const { to, subject, text } = req.body || {};
     if (!to || !subject || !text) {
-      return res.status(400).json({ error: 'to, subject, and text are required' });
+      return sendProblem(res, 400, 'to, subject, and text are required');
     }
 
     if (!mailerService.isConfigured()) {
-      return res.status(500).json({ error: 'SMTP is not configured' });
+      return sendProblem(res, 500, 'SMTP is not configured');
     }
 
     try {
       await mailerService.send({ to, subject, text });
       return res.json({ ok: true });
     } catch (err) {
-      return res.status(502).json({ error: 'failed to send email' });
+      return handleUnexpectedError(req, res, err, 'failed to send email');
     }
   }
 
@@ -32,4 +33,3 @@ function createMailerController({ mailerService }) {
 }
 
 module.exports = { createMailerController };
-
