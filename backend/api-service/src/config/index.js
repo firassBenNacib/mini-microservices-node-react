@@ -48,11 +48,29 @@ function assertRequired(name, value) {
 
 function isPlaceholder(value) {
   const normalized = String(value).trim().toLowerCase();
+  const usesExampleDomain = (() => {
+    if (
+      normalized === 'example.com' ||
+      normalized.endsWith('.example.com') ||
+      normalized.endsWith('@example.com')
+    ) {
+      return true;
+    }
+
+    try {
+      const parsed = new URL(normalized);
+      const host = (parsed.hostname || '').toLowerCase();
+      return host === 'example.com' || host.endsWith('.example.com');
+    } catch {
+      return false;
+    }
+  })();
+
   return (
     PLACEHOLDER_VALUES.has(normalized) ||
     normalized.includes('placeholder') ||
     normalized.startsWith('your-') ||
-    normalized.includes('example.com') ||
+    usesExampleDomain ||
     normalized.includes('replace-with')
   );
 }
