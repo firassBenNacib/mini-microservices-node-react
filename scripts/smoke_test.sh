@@ -152,9 +152,21 @@ PY
   assert_body_contains 'Microservices deployed and working'
 
   echo "Smoke check: protected audit recent"
-  request GET '/audit/recent?limit=5'
-  assert_status 200
-  assert_body_contains "${SMOKE_AUTH_EMAIL}"
+  audit_match=0
+  for _ in $(seq 1 10); do
+    request GET '/audit/recent?limit=5'
+    assert_status 200
+    if grep -Fq "${SMOKE_AUTH_EMAIL}" "${TMP_DIR}/body.txt"; then
+      audit_match=1
+      break
+    fi
+    sleep 2
+  done
+  if [[ "${audit_match}" -ne 1 ]]; then
+    echo "Audit history did not include ${SMOKE_AUTH_EMAIL} within the expected window." >&2
+    cat "${TMP_DIR}/body.txt" >&2
+    exit 1
+  fi
 else
   if [[ "${REQUIRE_AUTH_SMOKE}" == "true" ]]; then
     echo "Authenticated smoke checks are required, but SMOKE_AUTH_EMAIL and SMOKE_AUTH_PASSWORD are not set." >&2
