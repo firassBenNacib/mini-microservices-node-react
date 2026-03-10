@@ -1,11 +1,12 @@
 const jwt = require('jsonwebtoken');
 const { config } = require('../config');
+const { sendProblem } = require('../http/problem-response');
 
 function authenticateJwt(req, res, next) {
   const authHeader = req.headers.authorization || '';
   const [, token] = authHeader.split(' ');
   if (!token) {
-    return res.status(401).json({ error: 'missing token' });
+    return sendProblem(res, 401, 'missing token');
   }
 
   try {
@@ -13,7 +14,7 @@ function authenticateJwt(req, res, next) {
     req.user = decoded;
     return next();
   } catch (err) {
-    return res.status(401).json({ error: 'invalid token' });
+    return sendProblem(res, 401, 'invalid token');
   }
 }
 

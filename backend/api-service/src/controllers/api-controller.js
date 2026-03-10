@@ -1,6 +1,7 @@
 const { postMailer } = require('../services/mailer-service');
 const { postNotification } = require('../services/notification-service');
 const { sendAuditEvent } = require('../services/audit-service');
+const { sendProblem } = require('../http/problem-response');
 const { isE164Phone } = require('../utils/e164');
 
 function health(req, res) {
@@ -20,7 +21,7 @@ function message(req, res) {
 async function sendTestEmail(req, res) {
   const { to, subject, text } = req.body || {};
   if (!to) {
-    return res.status(400).json({ error: 'to is required' });
+    return sendProblem(res, 400, 'to is required');
   }
 
   try {
@@ -37,7 +38,7 @@ async function sendTestEmail(req, res) {
         details: `mailer error for ${to}`,
         source: 'api-service',
       }).catch(() => {});
-      return res.status(502).json({ error: 'mailer service error' });
+      return sendProblem(res, 502, 'mailer service error');
     }
 
     res.json({ ok: true });
@@ -54,18 +55,18 @@ async function sendTestEmail(req, res) {
       details: `mailer unavailable for ${to}`,
       source: 'api-service',
     }).catch(() => {});
-    res.status(502).json({ error: 'mailer service unavailable' });
+    return sendProblem(res, 502, 'mailer service unavailable');
   }
 }
 
 async function sendTestNotification(req, res) {
   const { to, subject, text } = req.body || {};
   if (!to) {
-    return res.status(400).json({ error: 'to is required' });
+    return sendProblem(res, 400, 'to is required');
   }
   const normalizedTo = String(to).trim();
   if (!isE164Phone(normalizedTo)) {
-    return res.status(400).json({ error: 'to must be a valid E.164 phone number, for example +12025550123' });
+    return sendProblem(res, 400, 'to must be a valid E.164 phone number, for example +12025550123');
   }
 
   try {
@@ -82,7 +83,7 @@ async function sendTestNotification(req, res) {
         details: `notification error for ${normalizedTo}`,
         source: 'api-service',
       }).catch(() => {});
-      return res.status(502).json({ error: 'notification service error' });
+      return sendProblem(res, 502, 'notification service error');
     }
 
     res.json({ ok: true });
@@ -99,7 +100,7 @@ async function sendTestNotification(req, res) {
       details: `notification unavailable for ${normalizedTo}`,
       source: 'api-service',
     }).catch(() => {});
-    res.status(502).json({ error: 'notification service unavailable' });
+    return sendProblem(res, 502, 'notification service unavailable');
   }
 }
 

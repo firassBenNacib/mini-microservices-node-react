@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { config } = require('./config');
+const { handleUnexpectedError } = require('./http/problem-response');
 const { httpLogger, metricsEndpoint, metricsMiddleware } = require('./observability');
 
 function createApp({ mailerRouter }) {
@@ -28,11 +29,7 @@ function createApp({ mailerRouter }) {
   app.use('/', mailerRouter);
 
   app.use((err, req, res, next) => {
-    const message = err && err.message ? err.message : 'internal error';
-    if (req.log) {
-      req.log.error({ err }, 'request error');
-    }
-    res.status(500).json({ error: message });
+    return handleUnexpectedError(req, res, err);
   });
 
   return app;

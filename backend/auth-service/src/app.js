@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const { config } = require('./config');
+const { handleUnexpectedError } = require('./http/problem-response');
 const { httpLogger, metricsEndpoint, metricsMiddleware } = require('./observability');
 
 function createApp({ authRouter }) {
@@ -18,10 +19,7 @@ function createApp({ authRouter }) {
   app.use('/auth', authRouter);
 
   app.use((err, req, res, next) => {
-    if (req.log) {
-      req.log.error({ err }, 'request error');
-    }
-    res.status(500).json({ error: 'internal error' });
+    return handleUnexpectedError(req, res, err);
   });
 
   return app;
