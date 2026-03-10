@@ -1,6 +1,7 @@
 const { sendAuditEvent } = require('../services/audit-service');
 const { signToken, parseExpiresToSeconds } = require('../services/jwt-service');
 const { findUserByEmail, verifyPassword } = require('../services/user-service');
+const { handleUnexpectedError, sendProblem } = require('../http/problem-response');
 
 function createAuthController({ config, pool }) {
   function health(req, res) {
@@ -10,7 +11,7 @@ function createAuthController({ config, pool }) {
   async function login(req, res) {
     const { email, password } = req.body || {};
     if (!email || !password) {
-      return res.status(400).json({ error: 'email and password are required' });
+      return sendProblem(res, 400, 'email and password are required');
     }
 
     try {
@@ -22,7 +23,7 @@ function createAuthController({ config, pool }) {
           details: 'user not found',
           source: 'auth-service',
         }).catch(() => {});
-        return res.status(401).json({ error: 'invalid credentials' });
+        return sendProblem(res, 401, 'invalid credentials');
       }
 
       const isValid = verifyPassword(password, user.password_hash);
@@ -33,7 +34,7 @@ function createAuthController({ config, pool }) {
           details: 'invalid password',
           source: 'auth-service',
         }).catch(() => {});
-        return res.status(401).json({ error: 'invalid credentials' });
+        return sendProblem(res, 401, 'invalid credentials');
       }
 
       const payload = { sub: user.email, role: user.role };
@@ -53,7 +54,7 @@ function createAuthController({ config, pool }) {
         user: { email: user.email, role: user.role },
       });
     } catch (err) {
-      return res.status(500).json({ error: 'internal error' });
+      return handleUnexpectedError(req, res, err, 'auth login error');
     }
   }
 
@@ -61,4 +62,3 @@ function createAuthController({ config, pool }) {
 }
 
 module.exports = { createAuthController };
-

@@ -14,6 +14,7 @@ PUBLISH_FRONTEND_SCRIPT := $(SCRIPT_DIR)/publish_frontend_s3.sh
 PUSH_ECR_SCRIPT := $(SCRIPT_DIR)/build_push_ecr.sh
 PUSH_DOCKERHUB_SCRIPT := $(SCRIPT_DIR)/build_push_dockerhub.sh
 SMOKE_TEST_SCRIPT := $(SCRIPT_DIR)/smoke_test.sh
+INTEGRATION_TEST_SCRIPT := $(SCRIPT_DIR)/integration_test.sh
 
 SHELL := bash
 .ONESHELL:
@@ -40,6 +41,7 @@ help:
 	printf "\n"
 	printf "  %-22s %s\n" "compose-validate" "Validate compose overlays with example env"
 	printf "  %-22s %s\n" "smoke-test" "Run HTTP smoke checks against BASE_URL"
+	printf "  %-22s %s\n" "integration-test" "Run compose-backed gateway integration checks"
 	printf "  %-22s %s\n" "publish-frontend-build" "Build the React frontend only"
 	printf "  %-22s %s\n" "publish-frontend" "Build and publish frontend assets (requires BUCKET)"
 	printf "\n"
@@ -97,7 +99,12 @@ smoke-test:
 	BASE_URL="$${BASE_URL}" \
 	SMOKE_AUTH_EMAIL="$${SMOKE_AUTH_EMAIL:-}" \
 	SMOKE_AUTH_PASSWORD="$${SMOKE_AUTH_PASSWORD:-}" \
+	REQUIRE_AUTH_SMOKE="$${REQUIRE_AUTH_SMOKE:-false}" \
 	bash "$(SMOKE_TEST_SCRIPT)" --base-url "$${BASE_URL}"
+
+.PHONY: integration-test
+integration-test:
+	bash "$(INTEGRATION_TEST_SCRIPT)"
 
 .PHONY: publish-frontend-build
 publish-frontend-build:
