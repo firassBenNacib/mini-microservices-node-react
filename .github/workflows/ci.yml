@@ -30,6 +30,11 @@ jobs:
       service_matrix: ${{ steps.filter.outputs.service_matrix }}
       image_matrix: ${{ steps.filter.outputs.image_matrix }}
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -69,7 +74,7 @@ jobs:
             files = ["__ALL__"]
 
           filters = {
-            "workflow_config": [".github/actions/**", ".github/workflows/**", "scripts/**", "Makefile", "docker-compose*.yml", ".env.local.example"],
+            "workflow_config": [".github/actions/**", ".github/workflows/**"],
             "frontend": ["frontend/**"],
             "gateway": ["gateway/**"],
             "auth_service": ["backend/auth-service/**"],
@@ -145,6 +150,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -157,6 +167,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -176,6 +191,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -194,6 +214,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -209,6 +234,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -238,6 +268,11 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.changes.outputs.service_matrix) }}
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -263,6 +298,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -298,6 +338,11 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.changes.outputs.image_matrix) }}
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -324,6 +369,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -348,48 +398,6 @@ jobs:
       - gateway-integration
     runs-on: ubuntu-latest
     steps:
-      - name: Write CI summary
-        env:
-          CHANGES: ${{ needs.changes.result }}
-          WORKFLOW_LINT: ${{ needs.workflow-lint.result }}
-          DOCKERFILE_LINT: ${{ needs.dockerfile-lint.result }}
-          SHELL_LINT: ${{ needs.shell-lint.result }}
-          COMPOSE_VALIDATE: ${{ needs.compose-validate.result }}
-          FRONTEND_BUILD: ${{ needs.frontend-build.result }}
-          NODE_SERVICES: ${{ needs.node-services.result }}
-          NOTIFICATION_SERVICE: ${{ needs.notification-service.result }}
-          IMAGE_BUILDS: ${{ needs.image-builds.result }}
-          GATEWAY_INTEGRATION: ${{ needs.gateway-integration.result }}
-          RUN_FRONTEND: ${{ needs.changes.outputs.run_frontend }}
-          RUN_NOTIFICATION: ${{ needs.changes.outputs.run_notification }}
-          RUN_NODE_SERVICES: ${{ needs.changes.outputs.run_node_services }}
-          RUN_IMAGES: ${{ needs.changes.outputs.run_images }}
-          RUN_INTEGRATION: ${{ needs.changes.outputs.run_integration }}
-        run: |
-          {
-            echo "## CI summary"
-            echo
-            echo "| Check | Result |"
-            echo "| --- | --- |"
-            echo "| changes | ${CHANGES} |"
-            echo "| workflow-lint | ${WORKFLOW_LINT} |"
-            echo "| dockerfile-lint | ${DOCKERFILE_LINT} |"
-            echo "| shell-lint | ${SHELL_LINT} |"
-            echo "| compose-validate | ${COMPOSE_VALIDATE} |"
-            echo "| frontend-build | ${FRONTEND_BUILD} |"
-            echo "| node-services | ${NODE_SERVICES} |"
-            echo "| notification-service | ${NOTIFICATION_SERVICE} |"
-            echo "| image-builds | ${IMAGE_BUILDS} |"
-            echo "| gateway-integration | ${GATEWAY_INTEGRATION} |"
-            echo
-            echo "### Path detection"
-            echo "- frontend: ${RUN_FRONTEND}"
-            echo "- notification-service: ${RUN_NOTIFICATION}"
-            echo "- node-services: ${RUN_NODE_SERVICES}"
-            echo "- image-builds: ${RUN_IMAGES}"
-            echo "- gateway-integration: ${RUN_INTEGRATION}"
-          } >> "${GITHUB_STEP_SUMMARY}"
-
       - name: Check upstream job results
         env:
           CHANGES: ${{ needs.changes.result }}
