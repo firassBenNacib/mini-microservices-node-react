@@ -501,6 +501,11 @@ jobs:
       - name: Build SonarQube scan arguments
         id: sonar_args
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          HEAD_REF: ${{ github.head_ref || '' }}
+          BASE_REF: ${{ github.base_ref || '' }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
           SONAR_PROVIDER: ${{ needs.resolve-sonarqube.outputs.provider }}
           SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION || '' }}
           SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || '' }}
@@ -512,6 +517,14 @@ jobs:
             fi
             echo "-Dsonar.projectKey=${SONAR_PROJECT_KEY}"
             echo "-Dsonar.projectName=mini-microservices-node-react"
+            echo "-Dsonar.scm.revision=${GITHUB_SHA}"
+            if [[ "${EVENT_NAME}" == "pull_request" ]]; then
+              echo "-Dsonar.pullrequest.key=${PR_NUMBER}"
+              echo "-Dsonar.pullrequest.branch=${HEAD_REF}"
+              echo "-Dsonar.pullrequest.base=${BASE_REF}"
+            else
+              echo "-Dsonar.branch.name=${REF_NAME}"
+            fi
             echo "-Dsonar.qualitygate.wait=true"
             echo "-Dsonar.qualitygate.timeout=600"
             echo "EOF"
