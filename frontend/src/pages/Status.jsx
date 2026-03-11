@@ -32,6 +32,44 @@ function triggerDashboardRefresh(refreshDashboard, context = '') {
   });
 }
 
+function createDashboardPolling(refreshDashboard) {
+  let pollTimerId = null;
+
+  const stopPolling = () => {
+    if (pollTimerId === null) {
+      return;
+    }
+    clearInterval(pollTimerId);
+    pollTimerId = null;
+  };
+
+  const pollFromTimer = () => {
+    triggerDashboardRefresh(refreshDashboard, 'from poller');
+  };
+
+  const startPolling = () => {
+    if (document.hidden || pollTimerId !== null) {
+      return;
+    }
+    pollTimerId = setInterval(pollFromTimer, DASHBOARD_POLL_INTERVAL_MS);
+  };
+
+  const onVisibilityChange = () => {
+    if (document.hidden) {
+      stopPolling();
+      return;
+    }
+    triggerDashboardRefresh(refreshDashboard, 'after visibility change');
+    startPolling();
+  };
+
+  return {
+    stopPolling,
+    startPolling,
+    onVisibilityChange,
+  };
+}
+
 export default function StatusPage() {
   const [loading, setLoading] = useState(false);
   const [statusOk, setStatusOk] = useState(false);
@@ -119,40 +157,14 @@ export default function StatusPage() {
   }, [refreshDashboard]);
 
   useEffect(() => {
-    let pollTimerId = null;
+    const polling = createDashboardPolling(refreshDashboard);
 
-    const stopPolling = () => {
-      if (pollTimerId === null) {
-        return;
-      }
-      clearInterval(pollTimerId);
-      pollTimerId = null;
-    };
-
-    const startPolling = () => {
-      if (document.hidden || pollTimerId !== null) {
-        return;
-      }
-      pollTimerId = setInterval(() => {
-        triggerDashboardRefresh(refreshDashboard, 'from poller');
-      }, DASHBOARD_POLL_INTERVAL_MS);
-    };
-
-    const onVisibilityChange = () => {
-      if (document.hidden) {
-        stopPolling();
-        return;
-      }
-      triggerDashboardRefresh(refreshDashboard, 'after visibility change');
-      startPolling();
-    };
-
-    startPolling();
-    document.addEventListener('visibilitychange', onVisibilityChange);
+    polling.startPolling();
+    document.addEventListener('visibilitychange', polling.onVisibilityChange);
 
     return () => {
-      stopPolling();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
+      polling.stopPolling();
+      document.removeEventListener('visibilitychange', polling.onVisibilityChange);
     };
   }, [refreshDashboard]);
 
