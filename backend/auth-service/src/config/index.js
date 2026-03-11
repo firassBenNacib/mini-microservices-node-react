@@ -106,8 +106,8 @@ function normalizeServiceUrl(name, value) {
   let parsed;
   try {
     parsed = new URL(String(value).trim());
-  } catch (err) {
-    throw new Error(`${name} must be a valid absolute URL`);
+  } catch (error) {
+    throw new Error(`${name} must be a valid absolute URL`, { cause: error });
   }
 
   if (!['http:', 'https:'].includes(parsed.protocol)) {
