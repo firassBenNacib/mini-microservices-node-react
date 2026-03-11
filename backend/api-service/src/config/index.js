@@ -96,6 +96,33 @@ function assertSecret(name, value) {
   }
 }
 
+function isLocalServiceHost(host) {
+  return ['127.0.0.1', 'localhost', 'mailer-service', 'notification-service', 'audit-service'].includes(
+    String(host || '').toLowerCase(),
+  );
+}
+
+function normalizeServiceUrl(name, value) {
+  assertRequired(name, value);
+
+  let parsed;
+  try {
+    parsed = new URL(String(value).trim());
+  } catch (err) {
+    throw new Error(`${name} must be a valid absolute URL`);
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error(`${name} must use http or https`);
+  }
+
+  if (parsed.protocol !== 'https:' && !isLocalServiceHost(parsed.hostname)) {
+    throw new Error(`${name} must use https outside local service networks`);
+  }
+
+  return parsed.toString();
+}
+
 const config = {
   port: toNumber(process.env.PORT, 8082),
   corsOrigin: parseCorsOrigin(process.env.CORS_ORIGIN),
@@ -109,17 +136,17 @@ const config = {
     sameSite: process.env.COOKIE_SAMESITE || 'Lax',
   },
   mailer: {
-    url: process.env.MAILER_URL || 'http://mailer-service:8083/send',
+    url: normalizeServiceUrl('MAILER_URL', process.env.MAILER_URL || 'http://mailer-service:8083/send'), // NOSONAR: internal Docker network traffic stays on the private service bridge.
     apiKey: process.env.MAILER_API_KEY,
     timeoutMs: toNumber(process.env.MAILER_TIMEOUT_MS, 5000),
   },
   notify: {
-    url: process.env.NOTIFY_URL || 'http://notification-service:8090/notify',
+    url: normalizeServiceUrl('NOTIFY_URL', process.env.NOTIFY_URL || 'http://notification-service:8090/notify'), // NOSONAR: internal Docker network traffic stays on the private service bridge.
     apiKey: process.env.NOTIFY_API_KEY,
     timeoutMs: toNumber(process.env.NOTIFY_TIMEOUT_MS, 3000),
   },
   audit: {
-    url: process.env.AUDIT_URL || 'http://audit-service:8084/audit/events',
+    url: normalizeServiceUrl('AUDIT_URL', process.env.AUDIT_URL || 'http://audit-service:8084/audit/events'), // NOSONAR: internal Docker network traffic stays on the private service bridge.
     apiKey: process.env.AUDIT_API_KEY,
     timeoutMs: toNumber(process.env.AUDIT_TIMEOUT_MS, 2000),
   },
