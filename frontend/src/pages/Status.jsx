@@ -46,6 +46,7 @@ export default function StatusPage() {
           setStatusOk(true);
         }
       } catch (err) {
+        console.warn('Failed to fetch status message', err);
         if (isMounted) {
           setStatusOk(false);
         }
@@ -104,7 +105,9 @@ export default function StatusPage() {
   }, []);
 
   useEffect(() => {
-    void refreshDashboard();
+    refreshDashboard().catch((err) => {
+      console.warn('Failed to refresh dashboard', err);
+    });
   }, [refreshDashboard]);
 
   useEffect(() => {
@@ -123,7 +126,9 @@ export default function StatusPage() {
         return;
       }
       pollTimerId = setInterval(() => {
-        void refreshDashboard();
+        refreshDashboard().catch((err) => {
+          console.warn('Failed to refresh dashboard from poller', err);
+        });
       }, DASHBOARD_POLL_INTERVAL_MS);
     };
 
@@ -132,7 +137,9 @@ export default function StatusPage() {
         stopPolling();
         return;
       }
-      void refreshDashboard();
+      refreshDashboard().catch((err) => {
+        console.warn('Failed to refresh dashboard after visibility change', err);
+      });
       startPolling();
     };
 

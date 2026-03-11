@@ -14,6 +14,7 @@ function authenticateJwt(req, res, next) {
     req.user = decoded;
     return next();
   } catch (err) {
+    req.log?.debug({ err }, 'token verification failed');
     return sendProblem(res, 401, 'invalid token');
   }
 }

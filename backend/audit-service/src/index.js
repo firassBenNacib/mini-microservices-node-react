@@ -19,7 +19,13 @@ async function start() {
   });
 }
 
-start().catch((err) => {
-  logger.error({ err }, 'Failed to start audit-service');
-  process.exit(1);
-});
+async function main() {
+  try {
+    await start();
+  } catch (err) {
+    logger.error({ err }, 'Failed to start audit-service');
+    process.exit(1);
+  }
+}
+
+main();

@@ -42,6 +42,7 @@ function verifyToken(token, config, expectedType) {
     if (right.kid === headerKid) return 1;
     return 0;
   });
+  let lastVerificationError = null;
 
   for (const candidate of candidates) {
     try {
@@ -51,18 +52,22 @@ function verifyToken(token, config, expectedType) {
       }
       return claims;
     } catch (err) {
+      if (!(err instanceof jwt.JsonWebTokenError) && !(err instanceof jwt.NotBeforeError)) {
+        throw err;
+      }
+      lastVerificationError = err;
       continue;
     }
   }
 
-  throw new Error('invalid token');
+  throw lastVerificationError || new Error('invalid token');
 }
 
 function parseExpiresToSeconds(input) {
   if (!input) return 3600;
   if (typeof input === 'number') return input;
   const value = String(input).trim();
-  const match = value.match(/^(\d+)([smhd])?$/i);
+  const match = /^(\d+)([smhd])?$/i.exec(value);
   if (!match) return 3600;
   const amount = Number(match[1]);
   const unit = (match[2] || 's').toLowerCase();

@@ -16,6 +16,7 @@ function verifyAccessToken(token, config) {
     if (right.kid === headerKid) return 1;
     return 0;
   });
+  let lastVerificationError = null;
 
   for (const candidate of candidates) {
     try {
@@ -25,11 +26,15 @@ function verifyAccessToken(token, config) {
       }
       return claims;
     } catch (err) {
+      if (!(err instanceof jwt.JsonWebTokenError) && !(err instanceof jwt.NotBeforeError)) {
+        throw err;
+      }
+      lastVerificationError = err;
       continue;
     }
   }
 
-  throw new Error('invalid token');
+  throw lastVerificationError || new Error('invalid token');
 }
 
 module.exports = { verifyAccessToken };

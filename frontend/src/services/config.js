@@ -1,4 +1,4 @@
-const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
+const env = import.meta?.env ?? {};
 
 export const AUTH_URL = env.VITE_AUTH_URL || '/auth';
 export const API_URL = env.VITE_API_URL || '/api';

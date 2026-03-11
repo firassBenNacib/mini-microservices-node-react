@@ -21,6 +21,7 @@ export default function EmailPage() {
       });
       setStatus('Email sent successfully.');
     } catch (err) {
+      console.warn('Failed to send email', err);
       setStatus('Email failed to send.');
     } finally {
       setLoading(false);
@@ -34,7 +35,7 @@ export default function EmailPage() {
       </div>
       <form className="form" onSubmit={handleSubmit}>
         <label>
-          To
+          <span>To</span>
           <input
             type="email"
             value={mailTo}
@@ -43,7 +44,7 @@ export default function EmailPage() {
           />
         </label>
         <label>
-          Subject
+          <span>Subject</span>
           <input
             type="text"
             value={mailSubject}
@@ -52,7 +53,7 @@ export default function EmailPage() {
           />
         </label>
         <label>
-          Text
+          <span>Text</span>
           <textarea
             rows="4"
             value={mailText}

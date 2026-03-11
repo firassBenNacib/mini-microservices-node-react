@@ -1,11 +1,11 @@
 const { config } = require('../config');
 const { handleUnexpectedError, sendProblem } = require('../http/problem-response');
 
-function createMailerController({ mailerService }) {
-  function health(req, res) {
-    res.json({ status: 'ok' });
-  }
+function health(req, res) {
+  res.json({ status: 'ok' });
+}
 
+function createMailerController({ mailerService }) {
   async function send(req, res) {
     const apiKey = req.headers['x-mailer-key'];
     if (!apiKey || apiKey !== config.mailerApiKey) {

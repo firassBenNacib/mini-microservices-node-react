@@ -21,7 +21,13 @@ async function start() {
   });
 }
 
-start().catch((err) => {
-  logger.error({ err }, 'Failed to start auth-service');
-  process.exit(1);
-});
+async function main() {
+  try {
+    await start();
+  } catch (err) {
+    logger.error({ err }, 'Failed to start auth-service');
+    process.exit(1);
+  }
+}
+
+main();

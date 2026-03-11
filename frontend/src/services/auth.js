@@ -4,12 +4,12 @@ const LEGACY_TOKEN_KEY = 'demo_token';
 let refreshInFlight = null;
 
 function clearLegacyToken() {
-  if (typeof window === 'undefined') {
+  if (typeof globalThis.window === 'undefined') {
     return;
   }
 
   try {
-    window.localStorage.removeItem(LEGACY_TOKEN_KEY);
+    globalThis.window.localStorage.removeItem(LEGACY_TOKEN_KEY);
   } catch {
     // Ignore storage access errors in locked-down browsers and tests.
   }

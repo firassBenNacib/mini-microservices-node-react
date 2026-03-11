@@ -93,7 +93,7 @@ export default function NotificationPage() {
   const computedSubject = `[${notifyPriority}] ${notifyCategory} notification`;
   const computedText = notifyDetails.trim() || `${notifyCategory} notification (${notifyPriority})`;
 
-  const computedRecipient = `${notifyCountryCode}${notifyLocalNumber.replace(/\D/g, '')}`;
+  const computedRecipient = `${notifyCountryCode}${notifyLocalNumber.replaceAll(/\D/g, '')}`;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -116,6 +116,7 @@ export default function NotificationPage() {
       });
       setStatus('Notification sent successfully.');
     } catch (err) {
+      console.warn('Failed to send notification', err);
       setStatus('Notification failed to send.');
     } finally {
       setLoading(false);
@@ -131,7 +132,7 @@ export default function NotificationPage() {
         <form className="form" onSubmit={handleSubmit}>
           <div className="phone-grid">
             <label>
-              Country/Region
+              <span>Country/Region</span>
               <select
                 value={notifyCountryCode}
                 onChange={(event) => setNotifyCountryCode(event.target.value)}
@@ -146,7 +147,7 @@ export default function NotificationPage() {
               </select>
             </label>
             <label>
-              Number
+              <span>Number</span>
               <input
                 type="tel"
                 inputMode="numeric"
@@ -159,7 +160,7 @@ export default function NotificationPage() {
             </label>
           </div>
           <label>
-            Category
+            <span>Category</span>
             <select
               value={notifyCategory}
               onChange={(event) => setNotifyCategory(event.target.value)}
@@ -170,7 +171,7 @@ export default function NotificationPage() {
             </select>
           </label>
           <label>
-            Priority
+            <span>Priority</span>
             <select
               value={notifyPriority}
               onChange={(event) => setNotifyPriority(event.target.value)}
@@ -181,7 +182,7 @@ export default function NotificationPage() {
             </select>
           </label>
           <label>
-            Details (optional)
+            <span>Details (optional)</span>
             <textarea
               rows="4"
               value={notifyDetails}
