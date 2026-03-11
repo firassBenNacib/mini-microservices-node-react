@@ -4,7 +4,7 @@ const rateLimit = require('express-rate-limit');
 function createAuthRouter({ controller }) {
   const router = express.Router();
 
-  const loginLimiter = rateLimit({
+  const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
     standardHeaders: true,
@@ -12,10 +12,10 @@ function createAuthRouter({ controller }) {
   });
 
   router.get('/health', controller.health);
-  router.get('/session', controller.session);
-  router.post('/login', loginLimiter, controller.login);
-  router.post('/refresh', controller.refresh);
-  router.post('/logout', controller.logout);
+  router.get('/session', authLimiter, controller.session);
+  router.post('/login', authLimiter, controller.login);
+  router.post('/refresh', authLimiter, controller.refresh);
+  router.post('/logout', authLimiter, controller.logout);
 
   return router;
 }

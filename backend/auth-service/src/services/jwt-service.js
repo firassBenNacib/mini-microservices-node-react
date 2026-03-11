@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const jwt = require('jsonwebtoken');
 
 function buildVerificationSecrets(config) {
@@ -22,11 +23,14 @@ function signAccessToken(payload, config) {
 }
 
 function signRefreshToken(payload, config) {
-  return signToken(
+  return jwt.sign(
     { ...payload, tokenType: 'refresh' },
     config.currentSecret,
-    config.refreshExpiresIn,
-    config.currentKid,
+    {
+      expiresIn: config.refreshExpiresIn,
+      header: { kid: config.currentKid },
+      jwtid: crypto.randomUUID(),
+    },
   );
 }
 

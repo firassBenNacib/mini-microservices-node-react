@@ -30,3 +30,18 @@ test('access and refresh tokens encode the expected claims and types', () => {
   assert.equal(accessClaims.role, 'admin');
   assert.equal(refreshClaims.tokenType, 'refresh');
 });
+
+test('refresh tokens are unique across consecutive rotations', () => {
+  const config = {
+    currentKid: 'active-key',
+    currentSecret: 'super-secret-value',
+    previousSecret: '',
+    expiresIn: '15m',
+    refreshExpiresIn: '7d',
+  };
+
+  const firstRefreshToken = signRefreshToken({ sub: 'user@example.com', role: 'admin' }, config);
+  const secondRefreshToken = signRefreshToken({ sub: 'user@example.com', role: 'admin' }, config);
+
+  assert.notEqual(firstRefreshToken, secondRefreshToken);
+});

@@ -10,7 +10,7 @@ async function runMigrations(dbConfig) {
     databaseUrl: buildDatabaseUrl(dbConfig),
     dir: path.join(__dirname, '..', 'migrations'),
     direction: 'up',
-    migrationsTable: 'pgmigrations',
+    migrationsTable: 'auth_service_pgmigrations',
     count: Infinity,
     verbose: false,
   });

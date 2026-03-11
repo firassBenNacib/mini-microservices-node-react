@@ -6,7 +6,7 @@ async function runMigrations(dbConfig) {
     databaseUrl: `postgres://${encodeURIComponent(dbConfig.user)}:${encodeURIComponent(dbConfig.password)}@${dbConfig.host}:${dbConfig.port}/${dbConfig.name}`,
     dir: path.join(__dirname, '..', 'migrations'),
     direction: 'up',
-    migrationsTable: 'pgmigrations',
+    migrationsTable: 'audit_service_pgmigrations',
     count: Infinity,
     verbose: false,
   });
