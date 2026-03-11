@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import LoginPage from './pages/Login.jsx';
 import StatusPage from './pages/Status.jsx';
@@ -19,6 +20,12 @@ const RequireAuth = ({ loading, authenticated, children }) => {
     return <Navigate to="/login" replace />;
   }
   return children;
+};
+
+RequireAuth.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  authenticated: PropTypes.bool.isRequired,
+  children: PropTypes.node.isRequired,
 };
 
 export default function App() {
@@ -50,6 +57,7 @@ export default function App() {
           setSession({ loading: false, ...nextSession });
         }
       } catch (err) {
+        console.warn('Failed to ensure session', err);
         if (active) {
           setSession({
             loading: false,
@@ -61,7 +69,7 @@ export default function App() {
       }
     };
 
-    void syncSession();
+    syncSession();
 
     return () => {
       active = false;
@@ -80,6 +88,12 @@ export default function App() {
       authenticated: false,
       expiresIn: 0,
       user: null,
+    });
+  };
+
+  const handleLogoutClick = () => {
+    handleLogout().catch((err) => {
+      console.warn('Logout failed', err);
     });
   };
 
@@ -107,7 +121,7 @@ export default function App() {
             </>
           )}
           {isAuthed && (
-            <button className="button ghost" type="button" onClick={() => void handleLogout()}>
+            <button className="button ghost" type="button" onClick={handleLogoutClick}>
               Logout
             </button>
           )}

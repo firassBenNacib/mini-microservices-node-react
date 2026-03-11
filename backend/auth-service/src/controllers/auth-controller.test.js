@@ -71,6 +71,10 @@ function createResponse() {
   };
 }
 
+function flushMicrotasks() {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
 test('login rejects requests with missing credentials', async (t) => {
   t.after(restoreServiceStubs);
 
@@ -117,6 +121,41 @@ test('login returns 401 and audits when the user is missing', async (t) => {
   ]);
 });
 
+test('login still responds when the missing-user audit write fails', async (t) => {
+  t.after(restoreServiceStubs);
+
+  let warning = null;
+  userService.findUserByEmail = async () => null;
+  auditService.sendAuditEvent = async () => {
+    throw new Error('audit unavailable');
+  };
+
+  const createAuthController = loadController();
+  const controller = createAuthController({
+    config: createConfig(),
+    pool: {},
+  });
+  const response = createResponse();
+
+  await controller.login(
+    {
+      body: { email: 'missing@example.com', password: 'secret' },
+      log: {
+        warn(payload, detail) {
+          warning = { payload, detail };
+        },
+      },
+    },
+    response,
+  );
+  await flushMicrotasks();
+
+  assert.equal(response.statusCode, 401);
+  assert.equal(warning.detail, 'failed to write audit event');
+  assert.equal(warning.payload.email, 'missing@example.com');
+  assert.equal(warning.payload.err.message, 'audit unavailable');
+});
+
 test('login returns an authenticated session and sets session cookies', async (t) => {
   t.after(restoreServiceStubs);
 
@@ -161,6 +200,92 @@ test('login returns an authenticated session and sets session cookies', async (t
     details: 'login successful',
     source: 'auth-service',
   });
+});
+
+test('login logs a warning when the success audit write fails', async (t) => {
+  t.after(restoreServiceStubs);
+
+  let warning = null;
+  userService.findUserByEmail = async () => ({
+    email: 'user@example.com',
+    password_hash: 'hashed-password',
+    role: 'admin',
+  });
+  userService.verifyPassword = async () => true;
+  auditService.sendAuditEvent = async () => {
+    throw new Error('audit unavailable');
+  };
+
+  const createAuthController = loadController();
+  const controller = createAuthController({
+    config: createConfig(),
+    pool: {
+      connect: async () => ({
+        query: async () => ({ rows: [] }),
+        release: () => {},
+      }),
+    },
+  });
+  const response = createResponse();
+
+  await controller.login(
+    {
+      body: { email: 'user@example.com', password: 'correct-password' },
+      headers: {},
+      log: {
+        warn(payload, detail) {
+          warning = { payload, detail };
+        },
+      },
+    },
+    response,
+  );
+  await flushMicrotasks();
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(warning.detail, 'failed to write audit event');
+  assert.equal(warning.payload.email, 'user@example.com');
+  assert.equal(warning.payload.err.message, 'audit unavailable');
+});
+
+test('login logs a warning when the invalid-password audit write fails', async (t) => {
+  t.after(restoreServiceStubs);
+
+  let warning = null;
+  userService.findUserByEmail = async () => ({
+    email: 'user@example.com',
+    password_hash: 'hashed-password',
+    role: 'admin',
+  });
+  userService.verifyPassword = async () => false;
+  auditService.sendAuditEvent = async () => {
+    throw new Error('audit unavailable');
+  };
+
+  const createAuthController = loadController();
+  const controller = createAuthController({
+    config: createConfig(),
+    pool: {},
+  });
+  const response = createResponse();
+
+  await controller.login(
+    {
+      body: { email: 'user@example.com', password: 'wrong-password' },
+      log: {
+        warn(payload, detail) {
+          warning = { payload, detail };
+        },
+      },
+    },
+    response,
+  );
+  await flushMicrotasks();
+
+  assert.equal(response.statusCode, 401);
+  assert.equal(warning.detail, 'failed to write audit event');
+  assert.equal(warning.payload.email, 'user@example.com');
+  assert.equal(warning.payload.err.message, 'audit unavailable');
 });
 
 test('session authenticates from the bearer header without rewriting cookies', async (t) => {

@@ -65,6 +65,7 @@ export const probeHealthEndpoint = async (url, timeoutMs = 4000) => {
         detail = body.status;
       }
     } catch (err) {
+      console.warn('Failed to parse health response body', err);
       detail = 'ok';
     }
 
@@ -73,6 +74,7 @@ export const probeHealthEndpoint = async (url, timeoutMs = 4000) => {
       detail,
     };
   } catch (err) {
+    console.warn('Health probe failed', err);
     return {
       state: 'unknown',
       detail: 'unreachable or timeout',

@@ -25,11 +25,12 @@ function serializeCookie(name, value, { httpOnly, secure, sameSite, maxAge }) {
 
 function appendSetCookie(res, value) {
   const current = res.getHeader ? res.getHeader('Set-Cookie') : undefined;
-  const next = Array.isArray(current)
-    ? [...current, value]
-    : current
-      ? [current, value]
-      : [value];
+  let next = [value];
+  if (Array.isArray(current)) {
+    next = [...current, value];
+  } else if (current) {
+    next = [current, value];
+  }
 
   if (res.setHeader) {
     res.setHeader('Set-Cookie', next);

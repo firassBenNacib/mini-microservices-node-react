@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 
 export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -14,6 +15,7 @@ export default function LoginPage({ onLogin }) {
     try {
       await onLogin(email, password);
     } catch (err) {
+      console.warn('Login failed', err);
       setError('Login failed. Check your credentials.');
     } finally {
       setLoading(false);
@@ -28,7 +30,7 @@ export default function LoginPage({ onLogin }) {
       <p className="muted">Sign in to access the dashboard.</p>
       <form className="form" onSubmit={handleSubmit}>
         <label>
-          Email
+          <span>Email</span>
           <input
             type="email"
             name="email"
@@ -39,7 +41,7 @@ export default function LoginPage({ onLogin }) {
           />
         </label>
         <label>
-          Password
+          <span>Password</span>
           <input
             type="password"
             name="password"
@@ -57,3 +59,7 @@ export default function LoginPage({ onLogin }) {
     </section>
   );
 }
+
+LoginPage.propTypes = {
+  onLogin: PropTypes.func.isRequired,
+};

@@ -11,6 +11,7 @@ export default function AuditPage() {
       const data = await fetchAuditEvents(10);
       setEvents(data || []);
     } catch (err) {
+      console.warn('Failed to load audit events', err);
       setEvents([]);
     } finally {
       setLoading(false);
@@ -18,7 +19,7 @@ export default function AuditPage() {
   };
 
   useEffect(() => {
-    void loadEvents();
+    loadEvents();
   }, []);
 
   return (

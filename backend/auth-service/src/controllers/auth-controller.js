@@ -13,11 +13,11 @@ const { createRefreshSession, revokeRefreshSession, rotateRefreshSession } = req
 const { findUserByEmail, verifyPassword } = require('../services/user-service');
 const { handleUnexpectedError, sendProblem } = require('../http/problem-response');
 
-function createAuthController({ config, pool }) {
-  function health(req, res) {
-    res.json({ status: 'ok' });
-  }
+function health(req, res) {
+  res.json({ status: 'ok' });
+}
 
+function createAuthController({ config, pool }) {
   function sessionResponse(authenticated, user) {
     return {
       authenticated,
@@ -66,6 +66,7 @@ function createAuthController({ config, pool }) {
       const user = resolveAuthenticatedUser(req);
       return res.json(sessionResponse(Boolean(user), user));
     } catch (err) {
+      req.log?.debug({ err }, 'failed to resolve auth session');
       return res.json(sessionResponse(false));
     }
   }
@@ -84,7 +85,9 @@ function createAuthController({ config, pool }) {
           actor: email,
           details: 'user not found',
           source: 'auth-service',
-        }).catch(() => {});
+        }).catch((err) => {
+          req.log?.warn({ err, email }, 'failed to write audit event');
+        });
         return sendProblem(res, 401, 'invalid credentials');
       }
 
@@ -95,7 +98,9 @@ function createAuthController({ config, pool }) {
           actor: email,
           details: 'invalid password',
           source: 'auth-service',
-        }).catch(() => {});
+        }).catch((err) => {
+          req.log?.warn({ err, email }, 'failed to write audit event');
+        });
         return sendProblem(res, 401, 'invalid credentials');
       }
 
@@ -111,7 +116,9 @@ function createAuthController({ config, pool }) {
         actor: user.email,
         details: 'login successful',
         source: 'auth-service',
-      }).catch(() => {});
+      }).catch((err) => {
+        req.log?.warn({ err, email: user.email }, 'failed to write audit event');
+      });
 
       return res.json(writeAuthenticatedSession(req, res, user, refreshToken));
     } catch (err) {
@@ -154,6 +161,7 @@ function createAuthController({ config, pool }) {
         ),
       );
     } catch (err) {
+      req.log?.debug({ err }, 'refresh token verification failed');
       clearSessionCookies(res, config);
       return res.json(sessionResponse(false));
     }

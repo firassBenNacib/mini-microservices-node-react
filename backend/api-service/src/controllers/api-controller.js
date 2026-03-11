@@ -4,18 +4,24 @@ const { sendAuditEvent } = require('../services/audit-service');
 const { sendProblem } = require('../http/problem-response');
 const { isE164Phone } = require('../utils/e164');
 
+function recordAuditEvent(req, payload) {
+  sendAuditEvent(payload).catch((err) => {
+    req.log?.warn({ err, eventType: payload.eventType }, 'failed to write audit event');
+  });
+}
+
 function health(req, res) {
   res.json({ status: 'ok' });
 }
 
 function message(req, res) {
   res.json({ message: 'Microservices deployed and working' });
-  sendAuditEvent({
+  recordAuditEvent(req, {
     eventType: 'MESSAGE_VIEW',
     actor: req.user?.sub || 'unknown',
     details: 'message viewed',
     source: 'api-service',
-  }).catch(() => {});
+  });
 }
 
 async function sendTestEmail(req, res) {
@@ -32,29 +38,30 @@ async function sendTestEmail(req, res) {
     });
 
     if (!response.ok) {
-      sendAuditEvent({
+      recordAuditEvent(req, {
         eventType: 'EMAIL_FAILED',
         actor: req.user?.sub || 'unknown',
         details: `mailer error for ${to}`,
         source: 'api-service',
-      }).catch(() => {});
+      });
       return sendProblem(res, 502, 'mailer service error');
     }
 
     res.json({ ok: true });
-    sendAuditEvent({
+    recordAuditEvent(req, {
       eventType: 'EMAIL_SENT',
       actor: req.user?.sub || 'unknown',
       details: `sent to ${to}`,
       source: 'api-service',
-    }).catch(() => {});
+    });
   } catch (err) {
-    sendAuditEvent({
+    req.log?.warn({ err, to }, 'mailer service unavailable');
+    recordAuditEvent(req, {
       eventType: 'EMAIL_FAILED',
       actor: req.user?.sub || 'unknown',
       details: `mailer unavailable for ${to}`,
       source: 'api-service',
-    }).catch(() => {});
+    });
     return sendProblem(res, 502, 'mailer service unavailable');
   }
 }
@@ -77,29 +84,30 @@ async function sendTestNotification(req, res) {
     });
 
     if (!response.ok) {
-      sendAuditEvent({
+      recordAuditEvent(req, {
         eventType: 'NOTIFY_FAILED',
         actor: req.user?.sub || 'unknown',
         details: `notification error for ${normalizedTo}`,
         source: 'api-service',
-      }).catch(() => {});
+      });
       return sendProblem(res, 502, 'notification service error');
     }
 
     res.json({ ok: true });
-    sendAuditEvent({
+    recordAuditEvent(req, {
       eventType: 'NOTIFY_SENT',
       actor: req.user?.sub || 'unknown',
       details: `sent to ${normalizedTo}`,
       source: 'api-service',
-    }).catch(() => {});
+    });
   } catch (err) {
-    sendAuditEvent({
+    req.log?.warn({ err, to: normalizedTo }, 'notification service unavailable');
+    recordAuditEvent(req, {
       eventType: 'NOTIFY_FAILED',
       actor: req.user?.sub || 'unknown',
       details: `notification unavailable for ${normalizedTo}`,
       source: 'api-service',
-    }).catch(() => {});
+    });
     return sendProblem(res, 502, 'notification service unavailable');
   }
 }

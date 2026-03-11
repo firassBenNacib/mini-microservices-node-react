@@ -305,8 +305,8 @@ select:focus {
   letter-spacing: 0.12em;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(31, 123, 217, 0.12);
-  color: #1f7bd9;
+  background: rgba(31, 123, 217, 0.18);
+  color: #0f4f96;
 }
 
 .audit-list {
@@ -409,18 +409,18 @@ select:focus {
 }
 
 .service-badge.up {
-  background: rgba(24, 121, 78, 0.14);
-  color: #18794e;
+  background: #d7f0e3;
+  color: #0f5f3b;
 }
 
 .service-badge.down {
-  background: rgba(215, 58, 73, 0.14);
-  color: #c22f2f;
+  background: #f9d7dc;
+  color: #8f1f2f;
 }
 
 .service-badge.unknown {
-  background: rgba(217, 119, 6, 0.16);
-  color: #9a5b03;
+  background: #f8e2bf;
+  color: #7a4300;
 }
 
 .service-detail {

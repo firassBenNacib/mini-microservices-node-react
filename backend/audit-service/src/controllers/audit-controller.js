@@ -3,11 +3,11 @@ const { handleUnexpectedError, sendProblem } = require('../http/problem-response
 const auditEventService = require('../services/audit-event-service');
 const { clampNumber } = require('../utils/clamp-number');
 
-function createAuditController({ pool }) {
-  function health(req, res) {
-    res.json({ status: 'ok' });
-  }
+function health(req, res) {
+  res.json({ status: 'ok' });
+}
 
+function createAuditController({ pool }) {
   async function createEvent(req, res) {
     const apiKey = req.headers['x-audit-key'];
     if (!apiKey || apiKey !== config.auditApiKey) {
