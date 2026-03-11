@@ -5,7 +5,6 @@ BASE_URL="${BASE_URL:-}"
 SMOKE_AUTH_EMAIL="${SMOKE_AUTH_EMAIL:-}"
 SMOKE_AUTH_PASSWORD="${SMOKE_AUTH_PASSWORD:-}"
 REQUIRE_AUTH_SMOKE="${REQUIRE_AUTH_SMOKE:-false}"
-AUTH_TOKEN=""
 
 usage() {
   cat <<'EOF'
@@ -44,11 +43,13 @@ fi
 BASE_URL="${BASE_URL%/}"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
+COOKIE_JAR="${TMP_DIR}/cookies.txt"
 
 request() {
   local method="$1"
   local path="$2"
   local body="${3:-}"
+  local extra_header="${4:-}"
   local headers_file="${TMP_DIR}/headers.txt"
   local body_file="${TMP_DIR}/body.txt"
   local status
@@ -59,16 +60,17 @@ request() {
     -o "${body_file}"
     -w '%{http_code}'
     -H 'Accept: application/json, text/html'
+    -b "${COOKIE_JAR}"
+    -c "${COOKIE_JAR}"
   )
 
   rm -f "${headers_file}" "${body_file}"
 
-  if [[ -n "${AUTH_TOKEN}" ]]; then
-    curl_args+=(-H "Authorization: Bearer ${AUTH_TOKEN}")
-  fi
-
   if [[ -n "${body}" ]]; then
     curl_args+=(-H 'Content-Type: application/json' --data "${body}")
+  fi
+  if [[ -n "${extra_header}" ]]; then
+    curl_args+=(-H "${extra_header}")
   fi
 
   status="$(curl "${curl_args[@]}" "${BASE_URL}${path}")"
@@ -93,6 +95,13 @@ assert_body_contains() {
     cat "${TMP_DIR}/body.txt" >&2
     exit 1
   fi
+}
+
+csrf_header() {
+  if [[ ! -f "${COOKIE_JAR}" ]]; then
+    return
+  fi
+  awk '$6 == "XSRF-TOKEN" { print $7 }' "${COOKIE_JAR}" | tail -n1
 }
 
 echo "Smoke check: frontend root"
@@ -135,16 +144,7 @@ PY
     echo "Unauthenticated deployment smoke checks still passed for ${BASE_URL}"
     exit 0
   fi
-  assert_body_contains '"token"'
-  AUTH_TOKEN="$(
-    BODY_FILE="${TMP_DIR}/body.txt" python3 - <<'PY'
-import json
-import os
-
-with open(os.environ["BODY_FILE"], "r", encoding="utf-8") as handle:
-    print(json.load(handle)["token"])
-PY
-  )"
+  assert_body_contains '"authenticated":true'
 
   echo "Smoke check: protected api message"
   request GET /api/message
@@ -154,7 +154,26 @@ PY
   echo "Smoke check: protected audit recent"
   request GET '/audit/recent?limit=5'
   assert_status 200
-  assert_body_contains "${SMOKE_AUTH_EMAIL}"
+  assert_body_contains '['
+
+  echo "Smoke check: auth refresh"
+  xsrf_token="$(csrf_header)"
+  if [[ -z "${xsrf_token}" ]]; then
+    echo "Missing XSRF-TOKEN cookie after login." >&2
+    exit 1
+  fi
+  request POST /auth/refresh '' "X-XSRF-TOKEN: ${xsrf_token}"
+  assert_status 200
+  assert_body_contains '"authenticated":true'
+
+  echo "Smoke check: auth logout"
+  request POST /auth/logout '' "X-XSRF-TOKEN: ${xsrf_token}"
+  assert_status 200
+  assert_body_contains '"status":"ok"'
+
+  echo "Smoke check: protected api requires a session after logout"
+  request GET /api/message
+  assert_status 401
 else
   if [[ "${REQUIRE_AUTH_SMOKE}" == "true" ]]; then
     echo "Authenticated smoke checks are required, but SMOKE_AUTH_EMAIL and SMOKE_AUTH_PASSWORD are not set." >&2

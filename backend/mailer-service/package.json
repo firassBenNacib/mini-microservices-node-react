@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "test": "node --test --test-concurrency=1"
+    "test": "node --test --test-concurrency=1",
+    "test:coverage": "c8 --check-coverage --lines 85 --functions 80 --branches 60 --statements 85 --reporter=text --reporter=lcov --reporter=json-summary node --test --test-concurrency=1"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -16,6 +17,11 @@
     "nodemailer": "^8.0.2",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
-    "prom-client": "^15.1.3"
+    "prom-client": "^15.1.3",
+    "swagger-jsdoc": "^6.2.8"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "^12.1.0",
+    "c8": "^10.1.3"
   }
 }

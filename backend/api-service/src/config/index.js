@@ -19,6 +19,20 @@ function toNumber(value, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function toBoolean(value, fallback) {
+  if (value === undefined) {
+    return fallback;
+  }
+  const normalized = String(value).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+}
+
 function parseCorsOrigin(value) {
   if (!value || !String(value).trim()) {
     throw new Error('CORS_ORIGIN is required and cannot be blank');
@@ -85,7 +99,15 @@ function assertSecret(name, value) {
 const config = {
   port: toNumber(process.env.PORT, 8082),
   corsOrigin: parseCorsOrigin(process.env.CORS_ORIGIN),
-  jwtSecret: process.env.JWT_SECRET,
+  jwt: {
+    currentKid: process.env.JWT_CURRENT_KID || 'active-key',
+    currentSecret: process.env.JWT_SECRET_CURRENT || process.env.JWT_SECRET,
+    previousSecret: process.env.JWT_SECRET_PREVIOUS || '',
+  },
+  cookie: {
+    secure: toBoolean(process.env.COOKIE_SECURE, process.env.NODE_ENV === 'production'),
+    sameSite: process.env.COOKIE_SAMESITE || 'Lax',
+  },
   mailer: {
     url: process.env.MAILER_URL || 'http://mailer-service:8083/send',
     apiKey: process.env.MAILER_API_KEY,
@@ -103,7 +125,10 @@ const config = {
   },
 };
 
-assertSecret('JWT_SECRET', config.jwtSecret);
+assertSecret('JWT_SECRET_CURRENT', config.jwt.currentSecret);
+if (config.jwt.previousSecret) {
+  assertSecret('JWT_SECRET_PREVIOUS', config.jwt.previousSecret);
+}
 assertSecret('MAILER_API_KEY', config.mailer.apiKey);
 assertSecret('NOTIFY_API_KEY', config.notify.apiKey);
 assertSecret('AUDIT_API_KEY', config.audit.apiKey);

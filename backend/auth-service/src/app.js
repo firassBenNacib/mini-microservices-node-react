@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const { config } = require('./config');
 const { handleUnexpectedError } = require('./http/problem-response');
 const { httpLogger, metricsEndpoint, metricsMiddleware } = require('./observability');
+const { buildOpenApiSpec } = require('./openapi');
 
 function createApp({ authRouter }) {
   const app = express();
@@ -12,10 +13,13 @@ function createApp({ authRouter }) {
   app.use(httpLogger);
   app.use(metricsMiddleware);
   app.use(helmet());
-  app.use(cors({ origin: config.corsOrigin }));
+  app.use(cors({ origin: config.corsOrigin, credentials: true }));
   app.use(express.json({ limit: '1mb' }));
 
   app.get('/metrics', metricsEndpoint);
+  app.get('/openapi.json', (req, res) => {
+    res.json(buildOpenApiSpec());
+  });
   app.use('/auth', authRouter);
 
   app.use((err, req, res, next) => {

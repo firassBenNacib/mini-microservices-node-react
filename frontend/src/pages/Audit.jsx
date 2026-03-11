@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { fetchAuditEvents } from '../services/audit.js';
 
-export default function AuditPage({ token }) {
+export default function AuditPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const loadEvents = async () => {
     setLoading(true);
     try {
-      const data = await fetchAuditEvents(token, 10);
+      const data = await fetchAuditEvents(10);
       setEvents(data || []);
     } catch (err) {
       setEvents([]);
@@ -18,8 +18,8 @@ export default function AuditPage({ token }) {
   };
 
   useEffect(() => {
-    loadEvents();
-  }, [token]);
+    void loadEvents();
+  }, []);
 
   return (
     <section className="card">

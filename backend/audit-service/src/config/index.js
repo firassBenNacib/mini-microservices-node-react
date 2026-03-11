@@ -85,7 +85,11 @@ function assertSecret(name, value) {
 const config = {
   port: toNumber(process.env.PORT, 8084),
   corsOrigin: parseCorsOrigin(process.env.CORS_ORIGIN),
-  jwtSecret: process.env.JWT_SECRET,
+  jwt: {
+    currentKid: process.env.JWT_CURRENT_KID || 'active-key',
+    currentSecret: process.env.JWT_SECRET_CURRENT || process.env.JWT_SECRET,
+    previousSecret: process.env.JWT_SECRET_PREVIOUS || '',
+  },
   auditApiKey: process.env.AUDIT_API_KEY,
   db: {
     host: process.env.DB_HOST || 'postgres',
@@ -96,7 +100,10 @@ const config = {
   },
 };
 
-assertSecret('JWT_SECRET', config.jwtSecret);
+assertSecret('JWT_SECRET_CURRENT', config.jwt.currentSecret);
+if (config.jwt.previousSecret) {
+  assertSecret('JWT_SECRET_PREVIOUS', config.jwt.previousSecret);
+}
 assertSecret('AUDIT_API_KEY', config.auditApiKey);
 assertSecret('DB_PASSWORD', config.db.password);
 

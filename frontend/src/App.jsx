@@ -1,24 +1,35 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import LoginPage from './pages/Login.jsx';
 import StatusPage from './pages/Status.jsx';
 import EmailPage from './pages/Email.jsx';
 import NotificationPage from './pages/Notification.jsx';
 import AuditPage from './pages/Audit.jsx';
-import { clearToken, getToken, setToken } from './services/auth.js';
-import { AUTH_URL } from './services/config.js';
+import { ensureSession, login, logout } from './services/auth.js';
 
-const RequireAuth = ({ token, children }) => {
-  if (!token) {
+const RequireAuth = ({ loading, authenticated, children }) => {
+  if (loading) {
+    return (
+      <section className="card">
+        <p className="hero-meta">Loading session...</p>
+      </section>
+    );
+  }
+  if (!authenticated) {
     return <Navigate to="/login" replace />;
   }
   return children;
 };
 
 export default function App() {
-  const [token, setTokenState] = useState(() => getToken());
-  const isAuthed = !!token;
+  const [session, setSession] = useState({
+    loading: true,
+    authenticated: false,
+    expiresIn: 0,
+    user: null,
+  });
   const location = useLocation();
+  const isAuthed = session.authenticated;
 
   const footerTitle = useMemo(() => {
     const path = location.pathname || '';
@@ -29,25 +40,47 @@ export default function App() {
     return 'Status';
   }, [location.pathname]);
 
+  useEffect(() => {
+    let active = true;
+
+    const syncSession = async () => {
+      try {
+        const nextSession = await ensureSession();
+        if (active) {
+          setSession({ loading: false, ...nextSession });
+        }
+      } catch (err) {
+        if (active) {
+          setSession({
+            loading: false,
+            authenticated: false,
+            expiresIn: 0,
+            user: null,
+          });
+        }
+      }
+    };
+
+    void syncSession();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const handleLogin = async (email, password) => {
-    const res = await fetch(`${AUTH_URL}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!res.ok) {
-      throw new Error('Login failed');
-    }
-
-    const data = await res.json();
-    setToken(data.token);
-    setTokenState(data.token);
+    const nextSession = await login(email, password);
+    setSession({ loading: false, ...nextSession });
   };
 
-  const handleLogout = () => {
-    clearToken();
-    setTokenState('');
+  const handleLogout = async () => {
+    await logout();
+    setSession({
+      loading: false,
+      authenticated: false,
+      expiresIn: 0,
+      user: null,
+    });
   };
 
   const logo = '/docker-icon.svg';
@@ -74,7 +107,7 @@ export default function App() {
             </>
           )}
           {isAuthed && (
-            <button className="button ghost" type="button" onClick={handleLogout}>
+            <button className="button ghost" type="button" onClick={() => void handleLogout()}>
               Logout
             </button>
           )}
@@ -90,32 +123,32 @@ export default function App() {
           <Route
             path="/"
             element={
-              <RequireAuth token={token}>
-                <StatusPage token={token} />
+              <RequireAuth loading={session.loading} authenticated={session.authenticated}>
+                <StatusPage />
               </RequireAuth>
             }
           />
           <Route
             path="/email"
             element={
-              <RequireAuth token={token}>
-                <EmailPage token={token} />
+              <RequireAuth loading={session.loading} authenticated={session.authenticated}>
+                <EmailPage />
               </RequireAuth>
             }
           />
           <Route
             path="/notification"
             element={
-              <RequireAuth token={token}>
-                <NotificationPage token={token} />
+              <RequireAuth loading={session.loading} authenticated={session.authenticated}>
+                <NotificationPage />
               </RequireAuth>
             }
           />
           <Route
             path="/audit"
             element={
-              <RequireAuth token={token}>
-                <AuditPage token={token} />
+              <RequireAuth loading={session.loading} authenticated={session.authenticated}>
+                <AuditPage />
               </RequireAuth>
             }
           />

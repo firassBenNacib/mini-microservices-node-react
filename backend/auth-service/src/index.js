@@ -1,5 +1,6 @@
 const { config } = require('./config');
-const { createPool, initSchema } = require('./services/db');
+const { createPool } = require('./services/db');
+const { runMigrations } = require('./services/migration-service');
 const { seedDefaultUser } = require('./services/user-service');
 const { createAuthController } = require('./controllers/auth-controller');
 const { createAuthRouter } = require('./routes/auth-routes');
@@ -7,8 +8,8 @@ const { createApp } = require('./app');
 const { logger } = require('./observability');
 
 async function start() {
+  await runMigrations(config.db);
   const pool = await createPool(config.db);
-  await initSchema(pool);
   await seedDefaultUser(pool, config.demoUser);
 
   const controller = createAuthController({ config, pool });

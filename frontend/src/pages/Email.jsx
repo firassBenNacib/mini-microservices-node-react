@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { sendTestEmail } from '../services/api.js';
 
-export default function EmailPage({ token }) {
+export default function EmailPage() {
   const [mailTo, setMailTo] = useState('');
   const [mailSubject, setMailSubject] = useState('');
   const [mailText, setMailText] = useState('');
@@ -14,7 +14,7 @@ export default function EmailPage({ token }) {
     setLoading(true);
 
     try {
-      await sendTestEmail(token, {
+      await sendTestEmail({
         to: mailTo,
         subject: mailSubject,
         text: mailText,

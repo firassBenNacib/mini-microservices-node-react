@@ -4,7 +4,7 @@ async function seedDefaultUser(pool, demoUser) {
   const { rows } = await pool.query('SELECT id FROM users WHERE email = $1', [demoUser.email]);
   if (rows.length > 0) return;
 
-  const hash = bcrypt.hashSync(demoUser.password, 10);
+  const hash = await bcrypt.hash(demoUser.password, 10);
   await pool.query(
     'INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3)',
     [demoUser.email, hash, 'user']
@@ -21,7 +21,7 @@ async function findUserByEmail(pool, email) {
 }
 
 function verifyPassword(password, passwordHash) {
-  return bcrypt.compareSync(password, passwordHash);
+  return bcrypt.compare(password, passwordHash);
 }
 
 module.exports = { seedDefaultUser, findUserByEmail, verifyPassword };

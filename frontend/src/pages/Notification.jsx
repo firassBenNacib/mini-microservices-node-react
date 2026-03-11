@@ -79,7 +79,7 @@ const COUNTRY_CODES = [
   { name: 'Vietnam', code: '+84' },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
-export default function NotificationPage({ token }) {
+export default function NotificationPage() {
   const [notifyCountryCode, setNotifyCountryCode] = useState('');
   const [notifyLocalNumber, setNotifyLocalNumber] = useState('');
   const [notifyCategory, setNotifyCategory] = useState('Deployment');
@@ -109,7 +109,7 @@ export default function NotificationPage({ token }) {
 
     setLoading(true);
     try {
-      await sendTestNotification(token, {
+      await sendTestNotification({
         to: computedRecipient,
         subject: computedSubject,
         text: computedText,
