@@ -29,8 +29,16 @@ function loadController() {
 
 function createResponse() {
   return {
+    headers: new Map(),
     statusCode: 200,
     body: undefined,
+    setHeader(name, value) {
+      this.headers.set(name, value);
+      return this;
+    },
+    getHeader(name) {
+      return this.headers.get(name);
+    },
     status(code) {
       this.statusCode = code;
       return this;
@@ -47,7 +55,16 @@ test('login rejects requests with missing credentials', async (t) => {
 
   const createAuthController = loadController();
   const controller = createAuthController({
-    config: { jwt: { secret: 'secret', expiresIn: '1h' } },
+    config: {
+      jwt: {
+        currentKid: 'active-key',
+        currentSecret: 'test-jwt-secret-value',
+        previousSecret: '',
+        expiresIn: '15m',
+        refreshExpiresIn: '7d',
+      },
+      cookie: { secure: false, sameSite: 'Lax' },
+    },
     pool: {},
   });
   const response = createResponse();
@@ -69,7 +86,16 @@ test('login returns 401 and audits when the user is missing', async (t) => {
 
   const createAuthController = loadController();
   const controller = createAuthController({
-    config: { jwt: { secret: 'secret', expiresIn: '1h' } },
+    config: {
+      jwt: {
+        currentKid: 'active-key',
+        currentSecret: 'test-jwt-secret-value',
+        previousSecret: '',
+        expiresIn: '15m',
+        refreshExpiresIn: '7d',
+      },
+      cookie: { secure: false, sameSite: 'Lax' },
+    },
     pool: {},
   });
   const response = createResponse();
@@ -88,7 +114,7 @@ test('login returns 401 and audits when the user is missing', async (t) => {
   ]);
 });
 
-test('login returns a signed token and audits success for valid credentials', async (t) => {
+test('login returns an authenticated session and sets session cookies', async (t) => {
   t.after(restoreServiceStubs);
 
   const auditEvents = [];
@@ -97,28 +123,43 @@ test('login returns a signed token and audits success for valid credentials', as
     password_hash: 'hashed-password',
     role: 'admin',
   });
-  userService.verifyPassword = () => true;
+  userService.verifyPassword = async () => true;
   auditService.sendAuditEvent = async (payload) => {
     auditEvents.push(payload);
   };
 
   const createAuthController = loadController();
   const controller = createAuthController({
-    config: { jwt: { secret: 'secret', expiresIn: '2h' } },
-    pool: {},
+    config: {
+      jwt: {
+        currentKid: 'active-key',
+        currentSecret: 'test-jwt-secret-value',
+        previousSecret: '',
+        expiresIn: '15m',
+        refreshExpiresIn: '7d',
+      },
+      cookie: { secure: false, sameSite: 'Lax' },
+    },
+    pool: {
+      connect: async () => ({
+        query: async () => ({ rows: [] }),
+        release: () => {},
+      }),
+    },
   });
   const response = createResponse();
 
   await controller.login(
-    { body: { email: 'user@example.com', password: 'correct-password' } },
+    { body: { email: 'user@example.com', password: 'correct-password' }, headers: {} },
     response
   );
 
   assert.equal(response.statusCode, 200);
+  assert.equal(response.body.authenticated, true);
   assert.equal(response.body.user.email, 'user@example.com');
   assert.equal(response.body.user.role, 'admin');
-  assert.equal(response.body.expiresIn, 7200);
-  assert.equal(typeof response.body.token, 'string');
+  assert.equal(response.body.expiresIn, 900);
+  assert.equal(Array.isArray(response.getHeader('Set-Cookie')), true);
   assert.equal(auditEvents.length, 1);
   assert.deepEqual(auditEvents[0], {
     eventType: 'LOGIN_SUCCESS',

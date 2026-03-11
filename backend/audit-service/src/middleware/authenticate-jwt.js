@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken');
 const { config } = require('../config');
 const { sendProblem } = require('../http/problem-response');
+const { verifyAccessToken } = require('../services/jwt-service');
 
 function authenticateJwt(req, res, next) {
   const authHeader = req.headers.authorization || '';
@@ -10,7 +10,7 @@ function authenticateJwt(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, config.jwtSecret);
+    const decoded = verifyAccessToken(token, config.jwt);
     req.user = decoded;
     return next();
   } catch (err) {

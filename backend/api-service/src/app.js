@@ -6,6 +6,7 @@ const { config } = require('./config');
 const { createApiRouter } = require('./routes/api-routes');
 const { handleUnexpectedError } = require('./http/problem-response');
 const { httpLogger, metricsEndpoint, metricsMiddleware } = require('./observability');
+const { buildOpenApiSpec } = require('./openapi');
 
 function createApp() {
   const app = express();
@@ -14,10 +15,13 @@ function createApp() {
   app.use(httpLogger);
   app.use(metricsMiddleware);
   app.use(helmet());
-  app.use(cors({ origin: config.corsOrigin }));
+  app.use(cors({ origin: config.corsOrigin, credentials: true }));
   app.use(express.json({ limit: '1mb' }));
 
   app.get('/metrics', metricsEndpoint);
+  app.get('/openapi.json', (req, res) => {
+    res.json(buildOpenApiSpec());
+  });
 
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,

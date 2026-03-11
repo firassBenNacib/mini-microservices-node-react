@@ -13,17 +13,4 @@ async function createPool(dbConfig) {
   return pool;
 }
 
-async function initSchema(pool) {
-  await pool.query(
-    `CREATE TABLE IF NOT EXISTS audit_events (
-      id SERIAL PRIMARY KEY,
-      event_type VARCHAR(100) NOT NULL,
-      actor VARCHAR(255),
-      details TEXT,
-      source VARCHAR(100),
-      created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-    )`
-  );
-}
-
-module.exports = { createPool, initSchema };
+module.exports = { createPool };

@@ -1,9 +1,8 @@
 import { API_URL } from './config.js';
+import { sessionFetch } from './auth.js';
 
-export const fetchMessage = async (token) => {
-  const res = await fetch(`${API_URL}/message`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const fetchMessage = async () => {
+  const res = await sessionFetch(`${API_URL}/message`);
 
   if (!res.ok) {
     throw new Error('Failed to fetch message');
@@ -12,12 +11,11 @@ export const fetchMessage = async (token) => {
   return res.json();
 };
 
-export const sendTestEmail = async (token, payload) => {
-  const res = await fetch(`${API_URL}/send-test-email`, {
+export const sendTestEmail = async (payload) => {
+  const res = await sessionFetch(`${API_URL}/send-test-email`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
   });
@@ -28,12 +26,11 @@ export const sendTestEmail = async (token, payload) => {
   }
 };
 
-export const sendTestNotification = async (token, payload) => {
-  const res = await fetch(`${API_URL}/send-test-notification`, {
+export const sendTestNotification = async (payload) => {
+  const res = await sessionFetch(`${API_URL}/send-test-notification`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
   });

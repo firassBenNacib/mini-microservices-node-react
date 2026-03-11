@@ -19,6 +19,20 @@ function toNumber(value, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function toBoolean(value, fallback) {
+  if (value === undefined) {
+    return fallback;
+  }
+  const normalized = String(value).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+}
+
 function parseCorsOrigin(value) {
   if (!value || !String(value).trim()) {
     throw new Error('CORS_ORIGIN is required and cannot be blank');
@@ -86,8 +100,11 @@ const config = {
   port: toNumber(process.env.PORT, 8081),
   corsOrigin: parseCorsOrigin(process.env.CORS_ORIGIN),
   jwt: {
-    secret: process.env.JWT_SECRET,
-    expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+    currentKid: process.env.JWT_CURRENT_KID || 'active-key',
+    currentSecret: process.env.JWT_SECRET_CURRENT || process.env.JWT_SECRET,
+    previousSecret: process.env.JWT_SECRET_PREVIOUS || '',
+    expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
   demoUser: {
     email: process.env.DEFAULT_USER_EMAIL || 'admin@example.com',
@@ -105,9 +122,16 @@ const config = {
     apiKey: process.env.AUDIT_API_KEY,
     timeoutMs: toNumber(process.env.AUDIT_TIMEOUT_MS, 2000),
   },
+  cookie: {
+    secure: toBoolean(process.env.COOKIE_SECURE, process.env.NODE_ENV === 'production'),
+    sameSite: process.env.COOKIE_SAMESITE || 'Lax',
+  },
 };
 
-assertSecret('JWT_SECRET', config.jwt.secret);
+assertSecret('JWT_SECRET_CURRENT', config.jwt.currentSecret);
+if (config.jwt.previousSecret) {
+  assertSecret('JWT_SECRET_PREVIOUS', config.jwt.previousSecret);
+}
 assertSecret('DEFAULT_USER_PASSWORD', config.demoUser.password);
 assertSecret('DB_PASSWORD', config.db.password);
 assertSecret('AUDIT_API_KEY', config.audit.apiKey);

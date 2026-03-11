@@ -22,7 +22,7 @@ const SERVICE_TARGETS = [
 ];
 const DASHBOARD_POLL_INTERVAL_MS = 10000;
 
-export default function StatusPage({ token }) {
+export default function StatusPage() {
   const [loading, setLoading] = useState(false);
   const [statusOk, setStatusOk] = useState(false);
   const [dashboardLoading, setDashboardLoading] = useState(false);
@@ -41,7 +41,7 @@ export default function StatusPage({ token }) {
       setLoading(true);
       setStatusOk(false);
       try {
-        await fetchMessage(token);
+        await fetchMessage();
         if (isMounted) {
           setStatusOk(true);
         }
@@ -60,7 +60,7 @@ export default function StatusPage({ token }) {
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, []);
 
   const refreshDashboard = useCallback(async () => {
     if (dashboardRefreshInFlight.current) {

@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 process.env.CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://127.0.0.1:8080';
-process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-value';
+process.env.JWT_SECRET_CURRENT = process.env.JWT_SECRET_CURRENT || 'test-jwt-secret-value';
 process.env.AUDIT_API_KEY = process.env.AUDIT_API_KEY || 'test-audit-key';
 process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'test-db-password';
 

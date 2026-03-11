@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const { config } = require('./config');
 const { handleUnexpectedError } = require('./http/problem-response');
 const { httpLogger, metricsEndpoint, metricsMiddleware } = require('./observability');
+const { buildOpenApiSpec } = require('./openapi');
 
 function createApp({ mailerRouter }) {
   const app = express();
@@ -17,6 +18,9 @@ function createApp({ mailerRouter }) {
   app.use(express.json({ limit: '1mb' }));
 
   app.get('/metrics', metricsEndpoint);
+  app.get('/openapi.json', (req, res) => {
+    res.json(buildOpenApiSpec());
+  });
 
   const mailLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
