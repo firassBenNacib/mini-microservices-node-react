@@ -96,6 +96,31 @@ function assertSecret(name, value) {
   }
 }
 
+function isLocalServiceHost(host) {
+  return ['127.0.0.1', 'localhost', 'audit-service'].includes(String(host || '').toLowerCase());
+}
+
+function normalizeServiceUrl(name, value) {
+  assertRequired(name, value);
+
+  let parsed;
+  try {
+    parsed = new URL(String(value).trim());
+  } catch (error) {
+    throw new Error(`${name} must be a valid absolute URL`, { cause: error });
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error(`${name} must use http or https`);
+  }
+
+  if (parsed.protocol !== 'https:' && !isLocalServiceHost(parsed.hostname)) {
+    throw new Error(`${name} must use https outside local service networks`);
+  }
+
+  return parsed.toString();
+}
+
 const config = {
   port: toNumber(process.env.PORT, 8081),
   corsOrigin: parseCorsOrigin(process.env.CORS_ORIGIN),
@@ -118,7 +143,7 @@ const config = {
     name: process.env.DB_NAME || 'devops_demo',
   },
   audit: {
-    url: process.env.AUDIT_URL || 'http://audit-service:8084/audit/events',
+    url: normalizeServiceUrl('AUDIT_URL', process.env.AUDIT_URL || 'http://audit-service:8084/audit/events'), // NOSONAR: internal Docker network traffic stays on the private service bridge.
     apiKey: process.env.AUDIT_API_KEY,
     timeoutMs: toNumber(process.env.AUDIT_TIMEOUT_MS, 2000),
   },

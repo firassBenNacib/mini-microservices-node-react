@@ -9,7 +9,15 @@ import {
   NOTIFY_URL,
 } from '../services/config.js';
 
-const toHealthUrl = (base) => `${(base || '').replace(/\/+$/, '')}/health`;
+function trimTrailingSlashes(value) {
+  let normalized = String(value || '').trim();
+  while (normalized.endsWith('/')) {
+    normalized = normalized.slice(0, -1);
+  }
+  return normalized;
+}
+
+const toHealthUrl = (base) => `${trimTrailingSlashes(base)}/health`;
 
 const SERVICE_TARGETS = [
   { key: 'gateway', label: 'Gateway', url: toHealthUrl(GATEWAY_URL) },
