@@ -51,3 +51,21 @@ test('probeHealthEndpoint reports unknown when the request throws', async (t) =>
 
   assert.deepEqual(result, { state: 'unknown', detail: 'unreachable or timeout' });
 });
+
+test('probeHealthEndpoint falls back to ok when the response body cannot be parsed', async (t) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    async json() {
+      throw new Error('invalid json');
+    },
+  });
+
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  const result = await probeHealthEndpoint('/gateway/health');
+
+  assert.deepEqual(result, { state: 'up', detail: 'ok' });
+});

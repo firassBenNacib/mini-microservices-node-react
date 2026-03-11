@@ -28,4 +28,4 @@ async function main() {
   }
 }
 
-main();
+main(); // NOSONAR: This CommonJS entrypoint cannot use top-level await.

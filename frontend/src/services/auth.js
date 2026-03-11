@@ -4,7 +4,7 @@ const LEGACY_TOKEN_KEY = 'demo_token';
 let refreshInFlight = null;
 
 function clearLegacyToken() {
-  if (typeof globalThis.window === 'undefined') {
+  if (globalThis.window === undefined) {
     return;
   }
 

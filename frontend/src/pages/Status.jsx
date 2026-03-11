@@ -22,6 +22,16 @@ const SERVICE_TARGETS = [
 ];
 const DASHBOARD_POLL_INTERVAL_MS = 10000;
 
+function logDashboardRefreshFailure(context, err) {
+  console.warn(`Failed to refresh dashboard ${context}`, err);
+}
+
+function triggerDashboardRefresh(refreshDashboard, context = '') {
+  refreshDashboard().catch((err) => {
+    logDashboardRefreshFailure(context, err);
+  });
+}
+
 export default function StatusPage() {
   const [loading, setLoading] = useState(false);
   const [statusOk, setStatusOk] = useState(false);
@@ -105,9 +115,7 @@ export default function StatusPage() {
   }, []);
 
   useEffect(() => {
-    refreshDashboard().catch((err) => {
-      console.warn('Failed to refresh dashboard', err);
-    });
+    triggerDashboardRefresh(refreshDashboard);
   }, [refreshDashboard]);
 
   useEffect(() => {
@@ -126,9 +134,7 @@ export default function StatusPage() {
         return;
       }
       pollTimerId = setInterval(() => {
-        refreshDashboard().catch((err) => {
-          console.warn('Failed to refresh dashboard from poller', err);
-        });
+        triggerDashboardRefresh(refreshDashboard, 'from poller');
       }, DASHBOARD_POLL_INTERVAL_MS);
     };
 
@@ -137,9 +143,7 @@ export default function StatusPage() {
         stopPolling();
         return;
       }
-      refreshDashboard().catch((err) => {
-        console.warn('Failed to refresh dashboard after visibility change', err);
-      });
+      triggerDashboardRefresh(refreshDashboard, 'after visibility change');
       startPolling();
     };
 
