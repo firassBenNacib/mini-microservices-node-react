@@ -269,10 +269,19 @@ jobs:
           CERTIFICATE_IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/_publish-images.yml@${{ github.ref }}
         run: |
           set -euo pipefail
-          cosign verify \
-            --certificate-identity "${CERTIFICATE_IDENTITY}" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            "${IMAGE_REF}" >/dev/null
+          for attempt in 1 2 3 4 5 6; do
+            if cosign verify \
+              --certificate-identity "${CERTIFICATE_IDENTITY}" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+              "${IMAGE_REF}" >/dev/null; then
+              exit 0
+            fi
+            if [[ "${attempt}" -eq 6 ]]; then
+              echo "::error::Image signature verification did not succeed after retries."
+              exit 1
+            fi
+            sleep $((attempt * 5))
+          done
 
       - name: Verify build provenance attestation
         if: steps.ecr_preflight.outputs.skip_publish != 'true'
@@ -281,10 +290,19 @@ jobs:
           IMAGE_REF: ${{ steps.tags.outputs.base_ref }}@${{ steps.build_and_push.outputs.digest }}
         run: |
           set -euo pipefail
-          gh attestation verify "oci://${IMAGE_REF}" \
-            --repo "${{ github.repository }}" \
-            --signer-workflow "${{ github.repository }}/.github/workflows/_publish-images.yml" \
-            --source-ref "${{ github.ref }}"
+          for attempt in 1 2 3 4 5 6; do
+            if gh attestation verify "oci://${IMAGE_REF}" \
+              --repo "${{ github.repository }}" \
+              --signer-workflow "${{ github.repository }}/.github/workflows/_publish-images.yml" \
+              --source-ref "${{ github.ref }}"; then
+              exit 0
+            fi
+            if [[ "${attempt}" -eq 6 ]]; then
+              echo "::error::Build provenance attestation verification did not succeed after retries."
+              exit 1
+            fi
+            sleep $((attempt * 5))
+          done
 
       - name: Verify SBOM attestation
         if: steps.ecr_preflight.outputs.skip_publish != 'true'
@@ -293,31 +311,17 @@ jobs:
           IMAGE_REF: ${{ steps.tags.outputs.base_ref }}@${{ steps.build_and_push.outputs.digest }}
         run: |
           set -euo pipefail
-          gh attestation verify "oci://${IMAGE_REF}" \
-            --repo "${{ github.repository }}" \
-            --signer-workflow "${{ github.repository }}/.github/workflows/_publish-images.yml" \
-            --source-ref "${{ github.ref }}" \
-            --predicate-type "https://spdx.dev/Document"
-
-      - name: Write publish summary
-        if: always()
-        run: |
-          if [[ "${{ steps.ecr_preflight.outputs.skip_publish }}" == "true" ]]; then
-            {
-              echo "## Publish summary"
-              echo
-              echo "- Service: \`${{ matrix.service_name }}\`"
-              echo "- Registry: \`${{ inputs.registry_provider }}\`"
-              echo "- Result: skipped"
-              echo "- Reason: immutable ECR tags already exist for \`${{ steps.ecr_preflight.outputs.existing_tags }}\`"
-            } >> "${GITHUB_STEP_SUMMARY}"
-          elif [[ "${{ job.status }}" == "success" ]]; then
-            {
-              echo "## Publish summary"
-              echo
-              echo "- Service: \`${{ matrix.service_name }}\`"
-              echo "- Registry: \`${{ inputs.registry_provider }}\`"
-              echo "- Result: published"
-              echo "- Tags: \`${{ steps.tags.outputs.tags }}\`"
-            } >> "${GITHUB_STEP_SUMMARY}"
-          fi
+          for attempt in 1 2 3 4 5 6; do
+            if gh attestation verify "oci://${IMAGE_REF}" \
+              --repo "${{ github.repository }}" \
+              --signer-workflow "${{ github.repository }}/.github/workflows/_publish-images.yml" \
+              --source-ref "${{ github.ref }}" \
+              --predicate-type "https://spdx.dev/Document"; then
+              exit 0
+            fi
+            if [[ "${attempt}" -eq 6 ]]; then
+              echo "::error::SBOM attestation verification did not succeed after retries."
+              exit 1
+            fi
+            sleep $((attempt * 5))
+          done
